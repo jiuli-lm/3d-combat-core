@@ -1,6 +1,6 @@
 using UnityEngine;
 
-namespace CombatCore.Character
+namespace CombatCore.Characters
 {
     class CharacterController : MonoBehaviour
     {

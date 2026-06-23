@@ -22,8 +22,8 @@
   <Project Path="Unity.AI.Assistant.Runtime.csproj" />
   <Project Path="Unity.PerformanceTesting.Editor.csproj" />
   <Project Path="Unity.AI.Assistant.UI.Editor.csproj" />
-  <Project Path="glTFast.Editor.csproj" />
   <Project Path="UnityEngine.TestRunner.csproj" />
+  <Project Path="glTFast.Editor.csproj" />
   <Project Path="Unity.AI.Toolkit.Utility.csproj" />
   <Project Path="Unity.AppUI.Redux.csproj" />
   <Project Path="Unity.AI.MCP.Editor.csproj" />
@@ -96,11 +96,12 @@
   <Project Path="Unity.Mathematics.Editor.csproj" />
   <Project Path="Unity.VisualScripting.SettingsProvider.Editor.csproj" />
   <Project Path="UnityEditor.UI.Analytics.csproj" />
-  <Project Path="Unity.AI.Assistant.Annotations.Editor.csproj" />
   <Project Path="Unity.ProBuilder.AssetIdRemapUtility.csproj" />
+  <Project Path="Unity.AI.Assistant.Annotations.Editor.csproj" />
   <Project Path="Unity.AppUI.Editor.csproj" />
-  <Project Path="Unity.AI.MCP.Runtime.csproj" />
+  <Project Path="Assembly-CSharp.csproj" />
   <Project Path="Unity.Settings.Editor.csproj" />
+  <Project Path="Unity.AI.MCP.Runtime.csproj" />
   <Project Path="Unity.InputSystem.TestFramework.csproj" />
   <Project Path="Unity.ShaderGraph.Utilities.csproj" />
   <Project Path="Unity.AI.Generators.Tools.csproj" />
@@ -108,7 +109,6 @@
   <Project Path="Unity.AppUI.Redux.Editor.csproj" />
   <Project Path="Unity.AI.Pbr.Srp.csproj" />
   <Project Path="Unity.AppUI.Undo.csproj" />
-  <Project Path="Assembly-CSharp.csproj" />
   <Project Path="Unity.CollabProxy.Editor.csproj" />
   <Project Path="Unity.AI.Toolkit.Async.csproj" />
   <Project Path="Unity.RenderPipeline.Universal.ShaderLibrary.csproj" />
