@@ -108,6 +108,7 @@ InitTestScene*.unity*
 
 # AI Agent
 /agent
+/.agents
 
 # Templates
 Assets/ScriptTemplates
