@@ -1,10 +1,9 @@
 
 using System.Diagnostics;
 using Unity.Mathematics;
-using UnityEngine.ProBuilder;
 using static Unity.Mathematics.math;
 
-namespace CombatCore.SAT
+namespace CombatCore.Core
 {
     // NativePlane 结构体用于表示一个平面
     [DebuggerDisplay("NativePlane: {Normal},{Offset}")]

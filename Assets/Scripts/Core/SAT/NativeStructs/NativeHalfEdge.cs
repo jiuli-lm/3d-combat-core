@@ -1,7 +1,7 @@
 
 using System.Diagnostics;
 
-namespace CombatCore.SAT
+namespace CombatCore.Core
 {
     // 调试时 显示 NativeHalfEdge 结构体的各个字段值
     [DebuggerDisplay("NativeHalfEdge: Origin={Origin}, Face={Face}, Twin={Twin}, [Prev{Prev} Next={Next}]")]

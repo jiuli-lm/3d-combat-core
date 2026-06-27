@@ -1,7 +1,12 @@
 
-namespace CombatCore.SAT
+
+using Unity.Collections.LowLevel.Unsafe;
+using Unity.Mathematics;
+
+namespace CombatCore.Core
 {
-    public class NativeHull
+    // 表示一个原生的几何体
+    public unsafe struct NativeHull
     {
         public int VertexCount; // 顶点数量
         public int FaceCount; // 面数量
@@ -12,7 +17,7 @@ namespace CombatCore.SAT
         // 以下是 用于告诉 NativeArray 在构造时跳过 LeakDetection 注册，用来提高速度
         public NativeArrayNoLeakDetection<float3> VerticesNative; // 顶点数组
         public NativeArrayNoLeakDetection<NativeFace> FacesNative; // 面数组
-        public NativeArrayNoLeakDetection<NativePlane> PanelsNative; // 平面数组
+        public NativeArrayNoLeakDetection<NativePlane> PlanesNative; // 平面数组
         public NativeArrayNoLeakDetection<NativeHalfEdge> EdgesNative; // 半边数组
 
         // 以下是直接指向内存的指针，供高效访问使用
@@ -53,7 +58,7 @@ namespace CombatCore.SAT
         {
             if(_isDisposed == 0)
             {
-                _isDisposed == 1;
+                _isDisposed = 1;
 
                 if(VerticesNative.IsCreated)
                     VerticesNative.Dispose();

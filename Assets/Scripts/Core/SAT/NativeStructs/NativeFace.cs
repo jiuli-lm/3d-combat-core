@@ -1,7 +1,7 @@
 
 using System.Diagnostics;
 
-namespace CombatCore.SAT
+namespace CombatCore.Core
 {
     // 调试时 显示 NativeFace 结构体的 Edge 字段
     [DebuggerDisplay("NativeFace: Edge={Edge}")]
