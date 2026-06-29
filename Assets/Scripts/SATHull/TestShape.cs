@@ -10,7 +10,7 @@ public struct TestShape : IEquatable<TestShape>, IComparable<TestShape>
     // 唯一标识符
     public int Id;
     // 形状的外壳
-    public NativeHull hull;
+    public NativeHull Hull;
     
     // 比较两个 TestShape 是否相等
     public int CompareTo(TestShape other)

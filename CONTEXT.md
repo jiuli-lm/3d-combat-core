@@ -32,6 +32,7 @@ Assets/
 | FSM | 有限状态机（Finite State Machine） |
 | SAT | 分离轴定理（Separating Axis Theorem），用于碰撞检测 |
 | 凸包 | 包围一组点或几何体的最小凸形状，当前用于 SAT 碰撞检测的数据表达 |
+| 凸包数据 | 用于描述凸包几何与拓扑关系的数据集合，作为 SAT 碰撞检测的输入 |
 | 凸包面 | 凸包边界上的一个平面多边形区域，用于表达凸包的一部分外表面 |
 | 半边 | 凸包拓扑中的有向边，用于连接顶点、凸包面以及相邻面的关系 |
 | URP | Universal Render Pipeline |
