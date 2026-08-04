@@ -128,13 +128,15 @@ public class HullTester : MonoBehaviour
         var collider = v.GetComponent<Collider>();
         if(collider is MeshCollider meshCollider)
         {
-            // return 一个NativeHull 然后create 用meshColloder的sharedMesh
+            // return 一个NativeHull 然后create 用meshCollider的sharedMesh
+            return HullFactory.CreateFromMesh(meshCollider.sharedMesh); // 从网格碰撞体创建凸包
         }
 
-        var mf = v.GetComponent<MeshFilter>();  
-        if(mf != null && mf.sharedMesh != null)
+        var meshFilter = v.GetComponent<MeshFilter>();  
+        if(meshFilter != null && meshFilter.sharedMesh != null)
         {
-            // return 一个NativeHull 然后create 用meshCollider的
+            // return 一个NativeHull 然后create 用meshFilter的sharedMesh
+            return HullFactory.CreateFromMesh(meshFilter.sharedMesh); // 从网格碰撞体创建凸包
         }
         throw new InvalidOperationException($"无法从游戏对象'{v?.name}'创建凸包");
     }
