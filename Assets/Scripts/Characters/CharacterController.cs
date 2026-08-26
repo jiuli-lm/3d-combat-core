@@ -7,6 +7,5 @@ namespace CombatCore.Characters
         private CharacterController _CharacterController;
         private Animator _animator;
         private Transform _transform;
-
     }
 }

@@ -100,9 +100,197 @@ namespace CombatCore.Core
                 var indicesFromMergedFaces = faceGroup.SelectMany(face => face.Indices).ToArray();
                 // 计算顶点形成的多边形的边界轮廓(边界顶点序列)
                 var border = PolygonPerimeter.CalculatePerimeter(indicesFromMergedFaces);
-                // 获取边界顶点的索引列表，提取EndIndex组成新数组
-                // var borderIndices = 
+                // 获取边界顶点的索引列表, 提取EndIndex组成新数组
+                var borderIndices = border.Select(b=>b.EndIndex).ToArray();
+                // 找出在组内顶点索引不在边界上的顶点, 认为它们是"孤立顶点"
+                // Except(borderIndices) 会返回一个新的集合, 包含 indicesFromMergedFaces 中有, 但 borderIndices 中没有的元素(即差集)
+                foreach (var idx in indicesFromMergedFaces.Except(borderIndices))
+                {
+                    orphanIndices.Add(idx);
+                }
 
+                // 使用栈内存分配存储边界顶点索引的数组(为了性能), 不然托管堆上
+                // TODO: SAT 流程跑通后用 Profiler 评估凸包重建开销。
+                // 当前 stackalloc 位于循环内, 且 borderIndices.ToArray() 已产生托管分配；
+                // 若该路径成为热点, 改为连续 Native 索引缓冲区, 并让面保存 VertexStart/VertexCount
+                var v = stackalloc int[borderIndices.Length];
+                int max = 0;
+
+                // 遍历边界顶点索引, 记录最大索引值(后续删除孤立顶点时需要)
+                for(int i = 0; i < borderIndices.Length; i++)
+                {
+                    var idx = borderIndices[i];
+                    if(idx > max)
+                        max = idx;
+                    v[i] = idx;
+                }
+
+                // 创建一个新的面定义, 包含最大顶点索引, 顶点数量, 顶点索引数组
+                faceDefs.Add(new NativeFaceDef
+                {
+                    HighestIndex = max,
+                    VertexCount = borderIndices.Length,
+                    Vertices = v
+                });
+            }
+
+            // 处理孤立顶点, 从唯一顶点列表中删除这些顶点, 把孤立顶点索引从大到小排序, 逐个处理, 倒着删除索引不会乱掉
+            // 删除不再被使用的孤立顶点, 并在所有相关面中修正因删除而发生偏移的顶点索引, 确保一致, OrderByDescending 从大到小排序
+            foreach(var orphanIdx in orphanIndices.OrderByDescending(i => i))
+            {
+                // 删除孤立顶点
+                uniqueVerts.Remove(orphanIdx);
+
+                // 修正面中顶点索引, 只修正那些使用了索引大于或等于 orphanIdx 的面, 因为小于它的索引不受影响
+                foreach(var face in faceDefs.Where(f => f.HighestIndex >= orphanIdx))
+                {
+                    for (int i = 0; i < face.VertexCount; i++)
+                    {
+                        var faceVertIdx = face.Vertices[i];
+                        if(faceVertIdx >= orphanIdx)
+                        {
+                            // 顶点索引-1 保持索引正确
+                            face.Vertices[i] = --faceVertIdx;
+                        }
+                    }
+                }                
+            }
+            // 创建一个空的 NativeHull 结构体, 用于存放结果
+            var result = new NativeHull();
+
+            // 使用临时原生数组 (NativeArray) 存放面和顶点数据, 方便后续调用本地方法构建凸包
+            // Allocator, Temp就是告诉 Unity, 我要分配一段临时使用的原生内存, 在这一帧使用完就释放
+            // 这里前一行using省略了大括号 实际上是一层嵌套关系
+            using(var faceNative = new NativeArray<NativeFaceDef>(faceDefs.ToArray(), Allocator.Temp))
+            using(var vertsNative = new NativeArray<float3>(uniqueVerts.ToArray(), Allocator.Temp))
+            {
+                NativeHullDef hullDef;
+                hullDef.VertexCount = vertsNative.Length; // 顶点数量
+                hullDef.VerticesNative = vertsNative; // 顶点数组
+                hullDef.FaceCount = faceNative.Length; // 面数量
+                hullDef.FacesNative = faceNative; // 面数组
+
+                // 调用本地函数根据面定义构建 NativeHull
+                SetFromFaces(ref result, hullDef);
+            }          
+            // 标记结果为已创建状态
+            result.IsCreated = true;
+
+            // 返回最终生成的凸包
+            return result;
+        }
+
+        // 从面定义设置凸包(NativeHull)结构体
+        public unsafe static void SetFromFaces(ref NativeHull hull, NativeHullDef def)
+        {
+            // 断言: 面数和顶点数必须大于0, 确保数据合法
+            Debug.Assert(def.FaceCount > 0);
+            Debug.Assert(def.VertexCount > 0);
+
+            // 设置顶点数量
+            hull.VertexCount = def.VertexCount;
+
+            // 将原生顶点数组转换为普通托管数组
+            var arr = def.VerticesNative.ToArray();
+
+            // 将顶点数组复制到 Persistent 分配的 NativeArray 中(长期保留)
+            hull.VerticesNative = new NativeArrayNoLeakDetection<float3>(arr, Allocator.Persistent);
+
+            // 获取底层指针
+            hull.Vertices = (float3*)hull.VerticesNative.GetUnsafePtr();
+
+            // 设置面数量
+            hull.FaceCount = def.FaceCount;
+            // 创建面数组, 存储所有 NativeFace 结构
+            hull.FacesNative = new NativeArrayNoLeakDetection<NativeFace>(hull.FaceCount, Allocator.Persistent);
+            hull.Faces = (NativeFace*)hull.FacesNative.GetUnsafePtr();
+
+            // 初始化所有面, 将其起始索引 Edge 设置为 -1 (表示尚未关联边)
+            for( int k = 0; k < def.FaceCount; ++k)
+            {
+                NativeFace* f = hull.Faces + k;
+                f -> Edge = -1;
+            }
+            
+            // 为所有面生成平面方程(法线 + 偏移量)
+            //CreateFacesPlanes();                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                        
+
+        }
+
+        // 为每个面构建对应的平面方程(包含法线和偏移)
+        // 用于后续碰撞检测中的面裁剪、投影等操作
+        public unsafe static void CreateFacesPlanes(ref NativeHull hull, ref NativeHullDef def)
+        {
+            // 创建存储面平面的 NativeArray, 使用 Persistent 分配器, 确保长期可用
+            hull.PlanesNative = new NativeArrayNoLeakDetection<NativePlane>(def.FaceCount, Allocator.Persistent);
+            // 获取底层原始指针
+            hull.Planes = (NativePlane*)hull.PlanesNative.GetUnsafePtr();
+
+            // 遍历每一个面
+            for(int i = 0; i < def.FaceCount; ++i)
+            {
+                NativeFaceDef face = def.FacesNative[i];
+                int vertCount = face.VertexCount;
+
+                // 一个面必须至少由3个顶点构成
+                Debug.Assert(vertCount >= 3, "输入网格必须至少有3个顶点");
+
+                // 获取当前面使用的顶点索引数组
+                int* indices = face.Vertices;
+
+                // 初始化法线和质心
+                float3 normal = default;
+                float3 centroid = default;
+
+                //  遍历当前面的所有边(首尾相连)用于计算 Newell 法线
+                for(int j = 0; j < vertCount; ++j)
+                {
+                    int i1 = indices[j];
+                    int i2 = j + 1 < vertCount ? indices[j + 1] : indices[0]; // 闭合边环
+
+                    float3 v1;
+                    float3 v2;
+                    
+                    // 尝试从顶点数组中获取 v1 和 v2, 若失败则打印异常
+                    try
+                    {
+                        v1 = def.VerticesNative[i1];
+                        v2 = def.VerticesNative[i2];
+                    }
+                    catch (Exception e)
+                    {
+                        Console.WriteLine(e);
+                        throw;
+                    }
+
+                    // 用 newell 方法累加计算当前面法线
+                    normal += Newell(v1, v2);
+                    // 累加质心(用于计算中心点)
+                    centroid += v1;
+                }
+
+                // 平均化质心(所有顶点坐标的均值)
+                centroid = centroid / vertCount;
+
+                // 归一化法线方向
+                var normalized = math.normalize(normal);
+
+                // 设置当前面的法线和偏移值
+                // plane.Normal, 面法线
+                // plane.Offset, 法线和中心点点积(也可以理解为点到原点的距离)
+                hull.Planes[i].Normal = normalized;
+                hull.Planes[i].Offset = math.dot(normalized, centroid);
+                
+                // 使用 Newell 方法计算多边形的法线向量
+                // 输入: 一条边的两个的顶点 a, b
+                float3 Newell(float3 a, float3 b)
+                {
+                    return new float3(
+                        (a.y - b.y) * (a.z - b.z), // x分量
+                        (a.z - b.z) * (a.x - b.x), // y分量
+                        (a.x - b.x) * (a.y - b.y)  // z分量
+                    );
+                }
             }
         }
 
