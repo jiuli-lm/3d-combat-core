@@ -213,8 +213,73 @@ namespace CombatCore.Core
             }
             
             // 为所有面生成平面方程(法线 + 偏移量)
-            //CreateFacesPlanes();                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                        
+            CreateFacesPlanes(ref hull, ref def);
 
+            // 创建边映射表, 用于查找边对的共享关系
+            var edgeMap = new Dictionary<(int v1, int v2), int>();
+            // 创建一个临时的半边列表(最大容量预设为 10000)
+            var edgeList = new NativeHalfEdge[10000]; // 临时边列表
+
+            // 遍历所有面
+            for(int i = 0; i < def.FaceCount; ++i)
+            {
+                NativeFaceDef face = def.FacesNative[i];
+                int vertCount = face.VertexCount;
+
+                Debug.Assert(vertCount >= 3); // 面至少由3个顶点组成
+
+                int* vertices = face.Vertices;
+
+                // 当前面包含的所有半边索引列表
+                var faceHalfEdges = new List<int>();
+
+                // 遍历当前面上的每一条边(桉顺序组成环)
+                for(int j = 0; j < vertCount; ++j)
+                {
+                    int v1 = vertices[j];
+                    int v2 = j + 1 < vertCount ? vertices[j + 1] : vertices[0]; // 环回头
+
+                    // 检查边是否已存在(顺序正向)
+                    bool edgeFound12 = edgeMap.TryGetValue((v1, v2),out int iter12);
+                    // 检查反向是否存在
+                    bool edgeFound21 = edgeMap.ContainsKey((v2,v1));
+
+                    // 正向存在与反向存在必须同步(对称性校验)
+                    Debug.Assert(edgeFound12 == edgeFound21);
+
+                    if (edgeFound12)
+                    {
+                        // 如果边已存在, 说明这是另一面的共享边
+                        int e12 = iter12;
+
+                        // 如果边还没有绑定过面, 则绑定当前面
+                        if(edgeList[e12].Face == -1)
+                            edgeList[e12].Face = i;
+                        else
+                            throw new Exception("两个共享边不能有相同顺序的相同顶点");
+
+                        // 如果当前面尚未绑定主边, 则绑定
+                        if(hull.Faces[i].Edge == -1)
+                            hull.Faces[i].Edge = e12;
+                        
+                        // 添加这条边索引到当前面的半边序列中
+                        faceHalfEdges.Add(e12);
+                    }
+                    else
+                    {
+                        // 边不存在, 需要新建一对半边 e12、e21(双向)
+                        int e12 = hull.EdgeCount++;
+                        int e21 = hull.EdgeCount++;
+                        
+                        // 设置当前面的主边索引
+                        if(hull.Faces[i].Edge == -1)
+                            hull.Faces[i].Edge = e12;
+                        
+                        faceHalfEdges.Add(e12);
+                    }
+
+                }
+            }
         }
 
         // 为每个面构建对应的平面方程(包含法线和偏移)
