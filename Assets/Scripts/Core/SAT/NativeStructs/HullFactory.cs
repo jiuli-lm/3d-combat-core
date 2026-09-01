@@ -276,10 +276,48 @@ namespace CombatCore.Core
                             hull.Faces[i].Edge = e12;
                         
                         faceHalfEdges.Add(e12);
-                    }
 
+                        // 初始化 e12(v1 -> v2)
+                        edgeList[e12].Prev = -1;
+                        edgeList[e12].Next = -1;
+                        edgeList[e12].Twin = e21;
+                        edgeList[e12].Face = i;
+                        edgeList[e12].Origin = v1;
+
+                        // 初始化 e21(v2 -> v1)
+                        edgeList[e21].Prev = -1;
+                        edgeList[e21].Next = -1;
+                        edgeList[e21].Twin = e12;
+                        edgeList[e21].Face = -1;
+                        edgeList[e21].Origin = v2;
+
+                        // 添加到边映射表, 便于查重和匹配
+                        edgeMap[(v1, v2)] = e12;
+                        edgeMap[(v2, v1)] = e21;
+                    }
+                }
+                // 连接当前面的所有半边, 使其形成闭环
+                for (int j = 0; j < faceHalfEdges.Count; ++j)
+                {
+                    int e1 = faceHalfEdges[j];
+                    int e2 = j + 1 < faceHalfEdges.Count ? faceHalfEdges[j + 1] : faceHalfEdges[0];
+
+                    edgeList[e1].Next = e2;
+                    edgeList[e2].Prev = e1;
                 }
             }
+
+            // 创建最终的边原生数组, 大小为 EdgeCount, 分配到 Persistent 内存中
+            hull.EdgesNative = new NativeArrayNoLeakDetection<NativeHalfEdge>(hull.EdgeCount, Allocator.Persistent);
+
+            // 将临时边列表拷贝到 EdgesNative 中
+            for (int j = 0; j < hull.EdgeCount; j++)
+            {
+                hull.EdgesNative[j] = edgeList[j];
+            }
+
+            // 获取底层原生指针
+            hull.Edges = (NativeHalfEdge*)hull.EdgesNative.GetUnsafePtr();
         }
 
         // 为每个面构建对应的平面方程(包含法线和偏移)

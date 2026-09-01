@@ -3,6 +3,10 @@ using System.Collections.Generic;
 using System;
 using System.Linq;
 using CombatCore.Core;
+using System.ComponentModel;
+using Unity.Mathematics;
+
+
 
 
 
@@ -144,12 +148,30 @@ public class HullTester : MonoBehaviour
     // 处理凸包碰撞检测
     private void HandleHullCollisions()
     {
-        
+        for (int i = 0; i < Transforms.Count; ++i)
+        {
+            var tA = Transforms[i];
+            if(tA == null) continue;
+
+            // 获取凸包和节点信息
+            var hullA = Hulls[tA.GetInstanceID()].Hull;
+            // RigidTransform是Unity.Mathematics下的高性能结构体, 就是为了之后的变换速度快, 只关心位置角度这些信息
+            var transformA = new RigidTransform(tA.rotation, tA.position);
+        }
     }
+
+    void OnDestroy() => EnsureDestroyed();
+    void OnDisable() => EnsureDestroyed();
 
     // 确保资源被销毁
     private void EnsureDestroyed()
     {
-        
+        if(Hulls == null) return;
+
+        foreach (var kvp in Hulls)
+        {
+            if(kvp.Value.Hull.IsValid)
+                kvp.Value.Hull.Dispose();
+        }
     }
 }
