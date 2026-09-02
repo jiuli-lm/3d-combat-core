@@ -107,8 +107,8 @@ InitTestScene*.unity*
 /[Aa]ssets/[Ii]nit[Tt]est[Ss]cene*.unity*
 
 # AI Agent
-/agent
-/.agents
+# /agent
+# /.agents
 
 # Templates
 Assets/ScriptTemplates
