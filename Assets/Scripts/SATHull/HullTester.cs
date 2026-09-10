@@ -44,17 +44,17 @@ public class HullTester : MonoBehaviour
         transforms.Clear();
         transformSet.Clear();
 
-        for(int i = 0; i < Transforms.Count; i++)
+        for (int i = 0; i < Transforms.Count; i++)
         {
             var t = Transforms[i];
 
-            if(t == null)
+            if (t == null)
                 continue;
-            if(!t.gameObject.activeSelf)
+            if (!t.gameObject.activeSelf)
                 continue;
-            if(!transformSet.Add(t))
+            if (!transformSet.Add(t))
                 continue;
-            
+
             transforms.Add(t);
         }
 
@@ -62,12 +62,12 @@ public class HullTester : MonoBehaviour
         var transformCount = 0;
 
         // 过滤下有没有新的 看看要不要重建
-        if(Hulls != null)
+        if (Hulls != null)
         {
-            for(var i = 0; i < transforms.Count; i++)
+            for (var i = 0; i < transforms.Count; i++)
             {
                 var t = transforms[i];
-                if(t == null)
+                if (t == null)
                     continue;
 
                 transformCount++;
@@ -79,7 +79,7 @@ public class HullTester : MonoBehaviour
                     break;
                 }
             }
-            if(!newTransformFound && transformCount == Hulls.Count)
+            if (!newTransformFound && transformCount == Hulls.Count)
                 return;
         }
 
@@ -107,7 +107,7 @@ public class HullTester : MonoBehaviour
         // 强制重新绘制场景视图
         SceneView.RepaintAll();
     }
-    
+
     // 创建测试形状
     private TestShape CreateShape(Transform t)
     {
@@ -126,14 +126,14 @@ public class HullTester : MonoBehaviour
         // 怎么知道网格信息呢
         // 获取Collider 还要看是meshCollider还是meshFilter
         var collider = v.GetComponent<Collider>();
-        if(collider is MeshCollider meshCollider)
+        if (collider is MeshCollider meshCollider)
         {
             // return 一个NativeHull 然后create 用meshCollider的sharedMesh
             return HullFactory.CreateFromMesh(meshCollider.sharedMesh); // 从网格碰撞体创建凸包
         }
 
-        var meshFilter = v.GetComponent<MeshFilter>();  
-        if(meshFilter != null && meshFilter.sharedMesh != null)
+        var meshFilter = v.GetComponent<MeshFilter>();
+        if (meshFilter != null && meshFilter.sharedMesh != null)
         {
             // return 一个NativeHull 然后create 用meshFilter的sharedMesh
             return HullFactory.CreateFromMesh(meshFilter.sharedMesh); // 从网格碰撞体创建凸包
@@ -147,7 +147,7 @@ public class HullTester : MonoBehaviour
         for (int i = 0; i < Transforms.Count; ++i)
         {
             var tA = Transforms[i];
-            if(tA == null) continue;
+            if (tA == null) continue;
 
             // 获取凸包和节点信息
             var hullA = Hulls[tA.GetInstanceID()].Hull;
@@ -157,7 +157,26 @@ public class HullTester : MonoBehaviour
             // 绘制凸包调试信息, 主要是外部轮廓
             HullDrawingUtility.DarwDebugHull(hullA, transformA, HullDrawingOptions);
 
+            // 与其他物体的碰撞检测
+            for (int j = i + 1; j < Transforms.Count; j++)
+            {
+                var tB = Transforms[j];
+                if (tB == null) continue;
+
+                if (!tA.hasChanged && !tB.hasChanged) continue; // 如果两个物体都没有变化就不需要检测了
+
+                var hullB = Hulls[tB.GetInstanceID()].Hull;
+                var transformB = new RigidTransform(tB.rotation, tB.position);
+
+                // 绘制碰撞信息
+                DrawHullCollision(tA.gameObject, tB.gameObject, transformA, hullA, transformB, hullB);
+            }
         }
+    }
+    public void DrawHullCollision(GameObject a, GameObject b, RigidTransform t1, NativeHull hull1,
+        RigidTransform t2, NativeHull hull2)
+    {
+        // var collision = HullCollision.GetDebugCollisionInfo(t1, hull1, t2, hull2);
     }
 
     void OnDestroy() => EnsureDestroyed();
@@ -166,11 +185,11 @@ public class HullTester : MonoBehaviour
     // 确保资源被销毁
     private void EnsureDestroyed()
     {
-        if(Hulls == null) return;
+        if (Hulls == null) return;
 
         foreach (var kvp in Hulls)
         {
-            if(kvp.Value.Hull.IsValid)
+            if (kvp.Value.Hull.IsValid)
                 kvp.Value.Hull.Dispose();
         }
     }
