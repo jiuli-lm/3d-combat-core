@@ -1,14 +1,8 @@
 using UnityEngine;
 using System.Collections.Generic;
 using System;
-using System.Linq;
 using CombatCore.Core;
-using System.ComponentModel;
 using Unity.Mathematics;
-
-
-
-
 
 #if UNITY_EDITOR
 using UnityEditor;
@@ -18,6 +12,8 @@ using UnityEditor;
 public class HullTester : MonoBehaviour
 {
     public List<Transform> Transforms; // 要测试的节点列表
+
+    public DebugHullFlags HullDrawingOptions = DebugHullFlags.Outline; // 绘制凸包的选项
 
     [Header("可视化选项")]
     public bool DrawIsCollided; // 绘制碰撞状态
@@ -157,6 +153,10 @@ public class HullTester : MonoBehaviour
             var hullA = Hulls[tA.GetInstanceID()].Hull;
             // RigidTransform是Unity.Mathematics下的高性能结构体, 就是为了之后的变换速度快, 只关心位置角度这些信息
             var transformA = new RigidTransform(tA.rotation, tA.position);
+
+            // 绘制凸包调试信息, 主要是外部轮廓
+            HullDrawingUtility.DarwDebugHull(hullA, transformA, HullDrawingOptions);
+
         }
     }
 

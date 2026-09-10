@@ -139,7 +139,7 @@ namespace CombatCore.Core
             foreach(var orphanIdx in orphanIndices.OrderByDescending(i => i))
             {
                 // 删除孤立顶点
-                uniqueVerts.Remove(orphanIdx);
+                uniqueVerts.RemoveAt(orphanIdx);
 
                 // 修正面中顶点索引, 只修正那些使用了索引大于或等于 orphanIdx 的面, 因为小于它的索引不受影响
                 foreach(var face in faceDefs.Where(f => f.HighestIndex >= orphanIdx))
@@ -389,9 +389,9 @@ namespace CombatCore.Core
                 float3 Newell(float3 a, float3 b)
                 {
                     return new float3(
-                        (a.y - b.y) * (a.z - b.z), // x分量
-                        (a.z - b.z) * (a.x - b.x), // y分量
-                        (a.x - b.x) * (a.y - b.y)  // z分量
+                        (a.y - b.y) * (a.z + b.z), // x分量
+                        (a.z - b.z) * (a.x + b.x), // y分量
+                        (a.x - b.x) * (a.y + b.y)  // z分量
                     );
                 }
             }

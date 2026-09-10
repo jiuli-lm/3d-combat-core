@@ -1,4 +1,7 @@
-using System; 
+using System;
+using Unity.Mathematics;
+using UnityEngine;
+
 
 #if UNITY_EDITOR
 using UnityEditor;
@@ -19,6 +22,34 @@ namespace CombatCore.Core
 
     public class HullDrawingUtility
     {
-        
+        // 根据选项绘制调试 Hull(凸包), 外部轮廓方便计算
+        public static void DarwDebugHull(NativeHull hull, RigidTransform t, DebugHullFlags options = DebugHullFlags.All,
+            Color BaseColor = default)
+        {
+            if(!hull.IsValid)
+                throw new ArgumentException("Hull is not valid", nameof(hull));
+            
+            if(options == DebugHullFlags.None) return;
+
+            if(BaseColor == default)
+                BaseColor = Color.yellow;
+            
+            // 遍历每对边, 所以迭代为+2
+            for (int j = 0; j < hull.EdgeCount; j = j + 2)
+            {
+                var edge = hull.GetEdge(j);
+                var twin = hull.GetEdge(j + 1);
+
+                // hull.GetVertex 获取局部空间位置, 进而用math.transform根据t来转换为世界空间
+                var edgeVertex1 = math.transform(t, hull.GetVertex(edge.Origin));
+                var twinVertex1 = math.transform(t, hull.GetVertex(twin.Origin));
+
+                if ((options & DebugHullFlags.Outline) != 0)
+                {
+                    Debug.DrawLine(edgeVertex1, twinVertex1, BaseColor);
+                }
+
+            }
+        }
     }
 }
