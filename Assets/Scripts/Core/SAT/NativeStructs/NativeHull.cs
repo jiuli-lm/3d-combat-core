@@ -85,5 +85,28 @@ namespace CombatCore.Core
 
         // 获取指定索引的半边
         public unsafe NativeHalfEdge GetEdge(int index) => EdgesNative[index];
+
+        // 获取指定索引的面(面所在的大平面, 无限的)
+        public unsafe NativePlane GetPlane(int index) => PlanesNative[index];
+
+        // 获取指定方向的支持顶点
+        public unsafe float3 GetSupport(float3 direction) => Vertices[GetSupportIndex(direction)];
+
+        // 获取指定方向的支持顶点索引
+        public unsafe int GetSupportIndex(float3 direction)
+        {
+            int index = 0;
+            float max = math.dot(direction, Vertices[index]);
+            for(int i = 1; i < VertexCount; ++i)
+            {
+                float dot = math.dot(direction, Vertices[i]);
+                if(dot > max)
+                {
+                    index = i;
+                    max = dot;
+                }
+            }
+            return index;
+        }
     }
 }

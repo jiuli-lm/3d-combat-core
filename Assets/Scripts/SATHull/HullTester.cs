@@ -173,10 +173,17 @@ public class HullTester : MonoBehaviour
             }
         }
     }
+
+    // 绘制凸包碰撞信息
     public void DrawHullCollision(GameObject a, GameObject b, RigidTransform t1, NativeHull hull1,
         RigidTransform t2, NativeHull hull2)
     {
-        // var collision = HullCollision.GetDebugCollisionInfo(t1, hull1, t2, hull2);
+        var collision = HullCollision.GetDebugCollisionInfo(t1, hull1, t2, hull2);
+        if (collision.IsColliding)
+        {
+            DebugDrawer.DrawSphere(t1.pos, 0.1f, UnityColors.GhostDodgerBlue);
+            DebugDrawer.DrawSphere(t2.pos, 0.1f, UnityColors.GhostDodgerBlue);
+        }
     }
 
     void OnDestroy() => EnsureDestroyed();
