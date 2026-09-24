@@ -83,6 +83,9 @@ namespace CombatCore.Core
         // 获取指定索引的顶点
         public unsafe float3 GetVertex(int index) => VerticesNative[index];
 
+        // 获取半边指针
+        public unsafe NativeHalfEdge* GetEdgePtr(int index) => Edges + index;
+
         // 获取指定索引的半边
         public unsafe NativeHalfEdge GetEdge(int index) => EdgesNative[index];
 
